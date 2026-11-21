@@ -1,0 +1,132 @@
+import pygame
+import random
+import sys
+
+# 1. Initialize Pygame
+pygame.init()
+
+# 2. Constants
+WIDTH, HEIGHT = 800, 600
+FPS = 60
+WHITE = (255, 255, 255)
+BLACK = (15, 15, 15)
+GRAY = (75, 75, 75)
+
+# 3. Setup Display
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Advanced Pong")
+clock = pygame.time.Clock()
+font = pygame.font.Font(None, 74)
+
+class Paddle:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 15, 100)
+        self.speed = 7
+
+    def move(self, up=True):
+        if up and self.rect.top > 0:
+            self.rect.y -= self.speed
+        elif not up and self.rect.bottom < HEIGHT:
+            self.rect.y += self.speed
+
+    def ai_move(self, ball):
+        # AI logic: Track the ball, but move slightly slower to make it beatable
+        if self.rect.centery < ball.rect.centery and self.rect.bottom < HEIGHT:
+            self.rect.y += self.speed - 1.5 
+        elif self.rect.centery > ball.rect.centery and self.rect.top > 0:
+            self.rect.y -= self.speed - 1.5
+
+    def draw(self):
+        pygame.draw.rect(screen, WHITE, self.rect)
+
+class Ball:
+    def __init__(self):
+        self.rect = pygame.Rect(WIDTH//2 - 10, HEIGHT//2 - 10, 20, 20)
+        self.base_speed = 6.0
+        self.dx = self.base_speed * random.choice([1, -1])
+        self.dy = self.base_speed * random.choice([1, -1])
+
+    def move(self):
+        self.rect.x += self.dx
+        self.rect.y += self.dy
+
+        # Ceiling and floor collision
+        if self.rect.top <= 0 or self.rect.bottom >= HEIGHT:
+            self.dy *= -1
+
+    def draw(self):
+        pygame.draw.ellipse(screen, WHITE, self.rect)
+
+    def reset(self):
+        self.rect.center = (WIDTH//2, HEIGHT//2)
+        self.dx = self.base_speed * random.choice([1, -1])
+        self.dy = self.base_speed * random.choice([1, -1])
+
+def main():
+    player = Paddle(30, HEIGHT//2 - 50)
+    ai = Paddle(WIDTH - 45, HEIGHT//2 - 50)
+    ball = Ball()
+    
+    player_score = 0
+    ai_score = 0
+
+    while True:
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # Player Input (W/S or Up/Down arrows)
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_w] or keys[pygame.K_UP]:
+            player.move(up=True)
+        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            player.move(up=False)
+
+        # AI and Ball Movement
+        ai.ai_move(ball)
+        ball.move()
+
+        # Paddle Collision Physics
+        if ball.rect.colliderect(player.rect) and ball.dx < 0:
+            # Calculate where the ball hit the paddle for dynamic angles
+            offset = (ball.rect.centery - player.rect.centery) / 50
+            ball.dy = ball.base_speed * offset
+            ball.dx *= -1.1 # Increase speed by 10%
+            ball.rect.left = player.rect.right # Prevent getting stuck inside paddle
+
+        elif ball.rect.colliderect(ai.rect) and ball.dx > 0:
+            offset = (ball.rect.centery - ai.rect.centery) / 50
+            ball.dy = ball.base_speed * offset
+            ball.dx *= -1.1 # Increase speed by 10%
+            ball.rect.right = ai.rect.left
+
+        # Scoring
+        if ball.rect.left <= 0:
+            ai_score += 1
+            ball.reset()
+        elif ball.rect.right >= WIDTH:
+            player_score += 1
+            ball.reset()
+
+        # Rendering
+        screen.fill(BLACK)
+        pygame.draw.aaline(screen, GRAY, (WIDTH//2, 0), (WIDTH//2, HEIGHT)) # Center net
+        
+        player.draw()
+        ai.draw()
+        ball.draw()
+
+        # Draw Score
+        player_text = font.render(str(player_score), True, WHITE)
+        screen.blit(player_text, (WIDTH//4, 20))
+        ai_text = font.render(str(ai_score), True, WHITE)
+        screen.blit(ai_text, (WIDTH*3//4, 20))
+
+        # Update display
+        pygame.display.flip()
+        clock.tick(FPS)
+
+if __name__ == "__main__":
+    main()

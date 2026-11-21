@@ -1,0 +1,51 @@
+import tkinter as tk
+
+class ClickerGame:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Python Clicker Game")
+        self.root.geometry("300x350")
+        
+        # Game Variables
+        self.score = 0
+        self.click_value = 1
+        self.upgrade_cost = 10
+        
+        # Score Display
+        self.score_label = tk.Label(root, text=f"Score: {self.score}", font=("Helvetica", 24, "bold"))
+        self.score_label.pack(pady=30)
+        
+        # Main Click Button
+        self.click_button = tk.Button(root, text="CLICK ME!", font=("Helvetica", 18), bg="lightblue", command=self.click)
+        self.click_button.pack(pady=10)
+        
+        # Upgrade Button
+        self.upgrade_button = tk.Button(root, text=f"Upgrade (Cost: {self.upgrade_cost})", font=("Helvetica", 12), command=self.upgrade)
+        self.upgrade_button.pack(pady=20)
+        
+        # Status Message (e.g., when you can't afford an upgrade)
+        self.status_label = tk.Label(root, text="", font=("Helvetica", 10), fg="red")
+        self.status_label.pack(pady=10)
+
+    def click(self):
+        self.score += self.click_value
+        self.status_label.config(text="") # Clear any warning messages
+        self.update_ui()
+
+    def upgrade(self):
+        if self.score >= self.upgrade_cost:
+            self.score -= self.upgrade_cost
+            self.click_value += 1
+            self.upgrade_cost = int(self.upgrade_cost * 1.5) # Next upgrade costs 50% more
+            self.status_label.config(text="Upgrade successful!", fg="green")
+            self.update_ui()
+        else:
+            self.status_label.config(text="Not enough points!", fg="red")
+
+    def update_ui(self):
+        self.score_label.config(text=f"Score: {self.score}")
+        self.upgrade_button.config(text=f"Upgrade (Cost: {self.upgrade_cost})")
+
+# Run the game
+if __name__ == "__main__":
+    window = tk.Tk()
